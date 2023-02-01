@@ -7,6 +7,34 @@ import {
 } from "react";
 import uaParser from "ua-parser-js";
 
+type Log = { type: "DEBUG" | "INFO" | "WARN" | "ERROR"; message: any[] };
+
+const originalConsoleDebug = console.debug;
+const originalConsoleLog = console.log;
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+const logArr: Log[] = [];
+
+console.debug = (...args) => {
+  logArr.push({ type: "DEBUG", message: args });
+  originalConsoleDebug(...args);
+};
+
+console.log = (...args) => {
+  logArr.push({ type: "INFO", message: args });
+  originalConsoleLog(...args);
+};
+
+console.warn = (...args) => {
+  logArr.push({ type: "WARN", message: args });
+  originalConsoleWarn(...args);
+};
+
+console.error = (...args) => {
+  logArr.push({ type: "ERROR", message: args });
+  originalConsoleError(...args);
+};
+
 const parser = new uaParser();
 const { name: browserName, version: browserVersion } = parser.getBrowser();
 
@@ -16,22 +44,28 @@ function App() {
   const [devices, setDevices] = useState<HIDDevice[]>([]);
 
   useEffect(() => {
+    console.debug("Got if HID is compatible", hidCompatible);
+  }, []);
+
+  useEffect(() => {
     const getDevices = async () => {
       const devices = await navigator.hid.getDevices();
       setDevices(devices);
+      console.debug("devices", devices);
     };
 
     getDevices();
   }, [devicesHasChanged]);
 
   const requestDevices = async () => {
-    await navigator.hid.requestDevice({ filters: [] });
+    const device = await navigator.hid.requestDevice({ filters: [] });
+    console.debug("device requested", device);
     setDevicesHasChanged((prev) => prev + 1);
   };
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-stone-900 text-white">
-      <div className="flex h-full max-h-[500px] w-full max-w-[400px] flex-col gap-4 rounded-lg  bg-stone-700 p-4">
+    <div className="grid h-full w-full grid-cols-1 grid-rows-3 bg-stone-900 text-white">
+      <div className="row-start-1 row-end-3 flex h-full max-h-[500px] w-full max-w-[400px] flex-col gap-4 self-center justify-self-center rounded-lg  bg-stone-700 p-4">
         <span className="text-center font-['Source_Code_Pro'] text-sm font-bold">
           {browserName} {browserVersion}
         </span>
@@ -47,6 +81,27 @@ function App() {
             ))}
           </div>
         </div>
+      </div>
+      <div className="row-start-3 overflow-y-auto p-4 font-['Source_Code_Pro'] text-stone-300">
+        {logArr.map((args, i) => (
+          <div
+            key={i}
+            className="mb-2 grid items-center"
+            style={{
+              gridTemplateColumns: "70px 20px 1fr",
+            }}
+          >
+            <pre>[{args.type}]</pre>
+            <pre>-</pre>
+            <pre>{JSON.stringify(args.message[0], null, 2)}</pre>
+            {args.message.length > 1 &&
+              args.message.slice(1).map((m, i) => (
+                <pre key={i} className="col-start-3">
+                  {JSON.stringify(m, null, 2)}
+                </pre>
+              ))}
+          </div>
+        ))}
       </div>
     </div>
   );
