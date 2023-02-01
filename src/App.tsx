@@ -12,20 +12,41 @@ const { name: browserName, version: browserVersion } = parser.getBrowser();
 
 function App() {
   const [hidCompatible] = useState("hid" in navigator);
+  const [devicesHasChanged, setDevicesHasChanged] = useState(0);
+  const [devices, setDevices] = useState<HIDDevice[]>([]);
+
+  useEffect(() => {
+    const getDevices = async () => {
+      const devices = await navigator.hid.getDevices();
+      setDevices(devices);
+    };
+
+    getDevices();
+  }, [devicesHasChanged]);
 
   const requestDevices = async () => {
-    // const device = await navigator.hid.requestDevice({ filters: [] });
-    // console.log(device);
+    await navigator.hid.requestDevice({ filters: [] });
+    setDevicesHasChanged((prev) => prev + 1);
   };
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-stone-800 text-white">
-      <div className="flex h-full max-h-[400px] w-full max-w-[300px] flex-col gap-4 rounded-xl  bg-stone-700 p-4">
-        <span className="text-center text-sm">
+    <div className="flex h-full w-full items-center justify-center bg-stone-900 text-white">
+      <div className="flex h-full max-h-[500px] w-full max-w-[400px] flex-col gap-4 rounded-lg  bg-stone-700 p-4">
+        <span className="text-center font-['Source_Code_Pro'] text-sm font-bold">
           {browserName} {browserVersion}
         </span>
         <Row>{hidCompatible && <Checkmark />} HID compatible</Row>
-        <Button onClick={requestDevices}>Request Devices</Button>
+        <Button onClick={requestDevices}>Connect Device</Button>
+        <div className="flex flex-col gap-1">
+          <span className="font-['Source_Code_Pro'] text-sm font-bold">
+            DEVICES
+          </span>
+          <div className="min-h-[48px] rounded-lg bg-stone-800 p-3">
+            {devices.map((device, i) => (
+              <div key={`${i}-${device.productId}`}>{device.productName}</div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
