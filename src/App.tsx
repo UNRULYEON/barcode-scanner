@@ -88,11 +88,21 @@ function App() {
             key={i}
             className="mb-2 grid items-center"
             style={{
-              gridTemplateColumns: "70px 20px 1fr",
+              gridTemplateColumns: "65px 30px 1fr",
             }}
           >
-            <pre>[{args.type}]</pre>
-            <pre>-</pre>
+            {args.type === "DEBUG" ? (
+              <pre className="text-blue-600">[{args.type}]</pre>
+            ) : args.type === "INFO" ? (
+              <pre>[{args.type}]</pre>
+            ) : args.type === "WARN" ? (
+              <pre className="text-yellow-600">[{args.type}]</pre>
+            ) : args.type === "ERROR" ? (
+              <pre className="text-red-600">[{args.type}]</pre>
+            ) : (
+              <pre>[{args.type}]</pre>
+            )}
+            <pre className="justify-self-center">-</pre>
             <pre>{JSON.stringify(args.message[0], null, 2)}</pre>
             {args.message.length > 1 &&
               args.message.slice(1).map((m, i) => (
