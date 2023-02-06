@@ -43,23 +43,40 @@ function App() {
   const [devicesHasChanged, setDevicesHasChanged] = useState(0);
   const [devices, setDevices] = useState<HIDDevice[]>([]);
 
+  const inputReport = (ev: HIDInputReportEvent) => {
+    console.debug("input report", ev);
+  };
+
+  useEffect(() => {}, []);
+
   useEffect(() => {
-    console.debug("Got if HID is compatible", hidCompatible);
+    console.debug("Got if HID is available", hidCompatible);
   }, []);
 
   useEffect(() => {
     const getDevices = async () => {
       const devices = await navigator.hid.getDevices();
       setDevices(devices);
-      console.debug("devices", devices);
+
+      await Promise.all(
+        devices.map(async (device) => {
+          await device.open();
+          console.debug(`device opened - ${device.productName}`);
+
+          device.addEventListener("inputreport", inputReport);
+        })
+      );
     };
 
     getDevices();
   }, [devicesHasChanged]);
 
   const requestDevices = async () => {
-    const device = await navigator.hid.requestDevice({ filters: [] });
+    if (!hidCompatible) return;
+
+    const [device] = await navigator.hid.requestDevice({ filters: [] });
     console.debug("device requested", device);
+
     setDevicesHasChanged((prev) => prev + 1);
   };
 
@@ -70,7 +87,9 @@ function App() {
           {browserName} {browserVersion}
         </span>
         <Row>{hidCompatible && <Checkmark />} HID compatible</Row>
-        <Button onClick={requestDevices}>Connect Device</Button>
+        <Button onClick={requestDevices} disabled={!hidCompatible}>
+          Connect Device
+        </Button>
         <div className="flex flex-col gap-1">
           <span className="font-['Source_Code_Pro'] text-sm font-bold">
             DEVICES
@@ -126,7 +145,7 @@ type ButtonProps = {
 const Button: FC<ButtonProps> = ({ children, ...rest }) => {
   return (
     <button
-      className="rounded-full bg-stone-800 p-3 font-bold transition-all hover:bg-stone-900"
+      className="rounded-full bg-stone-800 p-3 font-bold transition-all hover:bg-stone-900 disabled:cursor-not-allowed disabled:bg-stone-400 disabled:text-stone-500"
       {...rest}
     >
       {children}
